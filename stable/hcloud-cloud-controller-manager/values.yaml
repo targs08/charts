@@ -1,0 +1,71 @@
+# Default values for aws-cloud-controller-manager.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicas: 1
+
+image:
+  repository: hetznercloud/hcloud-cloud-controller-manager
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  # tag: v1.7.0
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+token: ""
+
+networkSupport:
+  enabled: false
+  networkId: ""
+  cluserCIDR: 10.244.0.0/16
+
+
+# isClusterService specifies whether chart should be deployed as cluster-service or normal k8s app.
+isClusterService: true
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: cloud-controller-manager
+
+podAnnotations:
+  scheduler.alpha.kubernetes.io/critical-pod: ''
+
+args: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 50Mi
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector:
+  node-role.kubernetes.io/master: ""
+
+tolerations:
+  - key: node.cloudprovider.kubernetes.io/uninitialized
+    value: "true"
+    effect: NoSchedule
+  - key: CriticalAddonsOnly
+    operator: "Exists"
+  - key: node-role.kubernetes.io/master
+    effect: NoSchedule
+  - key: node.kubernetes.io/not-ready
+    effect: "NoSchedule"
+
+affinity: {}

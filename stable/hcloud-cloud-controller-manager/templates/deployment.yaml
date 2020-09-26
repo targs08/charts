@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hcloud-cloud-controller-manager.fullname" . }}
+  labels: {{- include "hcloud-cloud-controller-manager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels: {{- include "hcloud-cloud-controller-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "hcloud-cloud-controller-manager.selectorLabels" . | nindent 8 }}
+    {{- with .Values.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+    {{- end }}
+    spec:
+      serviceAccountName: {{ include "hcloud-cloud-controller-manager.serviceAccountName" . }}
+      dnsPolicy: Default
+      hostNetwork: true
+      containers:
+        - name: hcloud-cloud-controller-manager
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          envFrom:
+            - secretRef:
+                name: {{ include "hcloud-cloud-controller-manager.fullname" . }}
+          command:
+            - /bin/hcloud-cloud-controller-manager
+            - --cloud-provider=hcloud
+            - --allow-untagged-cloud
+          args:
+            - --leader-elect=true
+          {{- if .Values.networkSupport.enabled }}
+            - --allocate-node-cidrs=true"
+            - --cluster-cidr={{ .Values.networkSupport.cluserCIDR }}
+          {{- end }}
+          {{- with .Values.args }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+    {{- end }}
