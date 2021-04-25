@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "hcloud-cloud-controller-manager.name" -}}
-aws-cloud-controller-manager
+hcloud-cloud-controller-manager
 {{- end }}
 
 {{/*

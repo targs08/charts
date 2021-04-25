@@ -21,6 +21,8 @@ networkSupport:
   networkId: ""
   cluserCIDR: 10.244.0.0/16
 
+updateStrategy:
+  type: RollingUpdate
 
 # isClusterService specifies whether chart should be deployed as cluster-service or normal k8s app.
 isClusterService: true

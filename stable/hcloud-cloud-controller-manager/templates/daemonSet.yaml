@@ -1,10 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: {{ include "hcloud-cloud-controller-manager.fullname" . }}
   labels: {{- include "hcloud-cloud-controller-manager.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicas }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy.type }}
   selector:
     matchLabels: {{- include "hcloud-cloud-controller-manager.selectorLabels" . | nindent 6 }}
   template:
@@ -36,7 +37,7 @@ spec:
           args:
             - --leader-elect=true
           {{- if .Values.networkSupport.enabled }}
-            - --allocate-node-cidrs=true"
+            - --allocate-node-cidrs=true
             - --cluster-cidr={{ .Values.networkSupport.cluserCIDR }}
           {{- end }}
           {{- with .Values.args }}

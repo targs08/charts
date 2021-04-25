@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "youtrack.fullname" . }}
+  labels: {{- include "youtrack.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "youtrack.fullname" . }}
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels: {{- include "youtrack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels: {{- include "youtrack.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "youtrack.serviceAccountName" . }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /opt/youtrack/data
+              subPath: data
+            - name: data
+              mountPath: /opt/youtrack/conf
+              subPath: conf
+            - name: data
+              mountPath: /opt/youtrack/backups
+              subPath: backups
+          {{- if .Values.config.logPersistence }}
+            - name: data
+              mountPath: /opt/youtrack/logs
+              subPath: logs
+          {{- else }}
+            - name: logs
+              mountPath: /opt/youtrack/logs
+          {{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+    {{- end }}
+      volumes:
+      {{- if not .Values.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+      {{- end }}
+      {{- if not .Values.config.logPersistence }}
+        - name: logs
+          emptyDir: {}
+      {{- end }}
+{{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{- toYaml (list .Values.persistence.accessMode) | nindent 10 }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+{{- end }}
